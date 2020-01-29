@@ -1,0 +1,6 @@
+{
+  "host": "localhost",
+  "user": "capstone",
+  "pass": "admin",
+  "db": "api"
+}

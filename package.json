@@ -20,6 +20,7 @@
   "homepage": "https://github.com/kevenzhao/coauthor#readme",
   "dependencies": {
     "express": "^4.17.1",
-    "pg": "^7.17.1"
+    "pg": "^7.17.1",
+    "sequelize": "^5.21.3"
   }
 }
