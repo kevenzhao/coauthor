@@ -1,5 +1,7 @@
 const Sequelize = require('sequelize');
 const AuthorModel = require('./models/author');
+const CoauthorModel = require('./models/coauthor');
+const TodoListModel = require('./models/todolist');
 const config = require('./config/config.json');
 
 const sequelize = new Sequelize(config.db, config.user, config.pass, {
@@ -22,12 +24,16 @@ const sequelize = new Sequelize(config.db, config.user, config.pass, {
 // --------------------------------
 
 const Author = AuthorModel(sequelize, Sequelize);
+const Coauthor = CoauthorModel(sequelize, Sequelize);
+const TodoList = TodoListModel(sequelize, Sequelize);
 
-sequelize.sync({ force: true })
+sequelize.sync({ force: false })
   .then(() => {
     console.log(`Database & tables created`);
   });
 
 module.exports = {
-  Author
+  Author,
+  Coauthor,
+  TodoList
 };
