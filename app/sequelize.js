@@ -27,10 +27,10 @@ const Author = AuthorModel(sequelize, Sequelize);
 const Coauthor = CoauthorModel(sequelize, Sequelize);
 const TodoList = TodoListModel(sequelize, Sequelize);
 
-sequelize.sync({ force: false })
-  .then(() => {
-    console.log(`Database & tables created`);
-  });
+// sequelize.sync({ force: false })
+//   .then(() => {
+//     console.log(`Database & tables created`);
+//   });
 
 module.exports = {
   Author,

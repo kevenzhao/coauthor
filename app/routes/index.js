@@ -1,21 +1,43 @@
 const app = module.exports = require('express')();
 
-const { Author } = require('../sequelize');
+const { Author, Coauthor } = require('../sequelize');
 
 app.get('/', (req, res) => {
   console.log(Author);
   res.send({ msg: 'Home Page' });
 });
 
-// Get the coauthors of a given person
+/* 
+  SEARCH - Get the coauthors of a given person
+  USE - /search + JSON body ("name" : NAME)
+      - /search?id=PROFILE_ID
+*/
 app.get('/search', async (req, res) => {
-  console.log(Author);
-  // const input_name = req.body.name;
-  const input_name = 'Ding Yuan'; // Testing case for now
-  const results = await Author.findAll({
-    where: {name: input_name}
-  });
-  res.send(results);
+  if (req.body.name) {  // Find by name
+    const input_name = req.body.name;
+    const authors = await Author.findAll({
+      where: { name: input_name }
+    });
+    if (authors.length == 0) {
+      res.send('No matching result with the given name');
+    } else if (authors.length == 1) {
+      const id = authors[0].gs_profile_id;
+      console.log(`Found 1 matching entry with profile id ${id}. Returning coauthors...`);
+      const results = await Coauthor.findAll({
+        where: { person1_id: id }
+      });
+      res.send(results);
+    } else {
+      res.send(authors);
+    }
+  } else if (req.query.id) {  // Find by ID
+    const results = await Coauthor.findAll({
+      where: { person1_id: req.query.id }
+    });
+    res.send(results);
+  } else {  // Nothing provided
+    throw new Error('Please provide a name to search');
+  }
 });
 
 // Find out if two persons have previously worked together
