@@ -12,62 +12,75 @@ app.get('/', (req, res) => {
   USE - /search + JSON body ("name" : NAME)
       - /search?id=PROFILE_ID
 */
-app.get('/search', async (req, res) => {
+app.get('/searchAuthor', async (req, res) => {
   if (req.body.name) {  // Find by name
-    const input_name = req.body.name;
-    const authors = await Author.findAll({
-      where: { name: input_name }
-    });
-    if (authors.length == 0) {
-      res.send('No matching result with the given name');
-    } else if (authors.length == 1) {
-      const id = authors[0].gs_profile_id;
-      console.log(`Found 1 matching entry with profile id ${id}. Returning coauthors...`);
-      const results = await Coauthor.findAll({
-        where: { person1_id: id }
-      });
-      res.send(results);
-    } else {
-      res.send(authors);
+    const input = req.body.name;
+
+    if (Array.isArray(input) && input.length == 2) { // multiple authors
+      const author1 = input[0];
+      const author2 = input[1];
+      console.log(`Multiple authors: ${author1}, ${author2}`);
+    
+      const result1 = await Author.findAll({ where: { name: author1 }, raw: true });
+      const result2 = await Author.findAll({ where: { name: author2 }, raw: true });
+      console.log(`For ${author1}, found ${author1.length} results: ${result1}`);
+      console.log(`For ${author2}, found ${author2.length} results: ${result2}`);
+    
+      let combined = {}
+      combined[author1] = result1;
+      combined[author2] = result2;
+      res.send(combined);
+
+    } else {  // single author
+      let name = Array.isArray(input) ? input[0] : input;
+      const authors = await Author.findAll({ where: { name }});
+      
+      if (authors.length == 0) {
+        res.send('No matching result with the given name');
+      } 
+      else if (authors.length == 1) {
+        const id = authors[0].gs_profile_id;
+        console.log(`Found 1 matching entry with profile id ${id}`);
+        res.send(authors);
+      } 
+      else {
+        res.send(authors);
+      }
     }
   } else if (req.query.id) {  // Find by ID
-    const results = await Coauthor.findAll({
-      where: { person1_id: req.query.id }
+    const author = await Author.findOne({
+      where: { gs_profile_id: req.query.id }
     });
-    res.send(results);
-  } else {  // Nothing provided
-    throw new Error('Please provide a name to search');
+    res.send(author);
+  } 
+  else {  // Nothing provided
+    throw new Error('Please provide at least one name to search');
   }
 });
 
 // Find out if two persons have previously worked together
-app.get('/coauthor', async (req, res) => {
-  console.log(Author);
+app.get('/check', async (req, res) => {
+  if (!req.body.ids || req.body.ids.length != 2) {
+    res.status(400).send('USE: { ids: [ID1, ID2] }');
+  } else {  // OK
+    const id1 = req.body.ids[0];
+    const id2 = req.body.ids[1];
 
-  // const input_name1 = req.body.name1;
-  // const input_name2 = req.body.name2;
-  const input_name1 = 'Ding Yuan'; // Testing case for now
-  const input_name2 = "Baochun Li";
-  
-  const person_id = await Author.findAll({
-    attributes: ['id'],
-    where: {name: input_name1}
-  });
-  
-  const match = await Coauthor.findAll({
-    where: {
-      [Op.and]: [
-        { person1_id: person_id },
-        { person2_name: input_name2 }
-      ]
-    }
-  });
+    let au1 = await Author.findOne({ where: { gs_profile_id: id1 }});
+    let au2 = await Author.findOne({ where: { gs_profile_id: id2 }});
 
-  const results = False;
-  if (match != null){
-    results = False;
-  } 
-  res.send(results);
+    if (!au1 || !au2) res.status(404).send('No author with the id found in database');
+    else {
+      let co1 = await Coauthor.findOne({ where: { person1_id: id1, person2_name: au2.name }});
+      let co2 = await Coauthor.findOne({ where: { person1_id: id2, person2_name: au1.name }});
+
+      if (!co1 && !co2) res.send('No conflicts of interest between these two authors');
+      else {
+        if (co1) res.send(`Worked together in ${co1.most_recent_year} on ${co1.most_recent_paper}`);
+        else if (co2) res.send(`Worked together in ${co2.most_recent_year} on ${co2.most_recent_paper}`);
+      }
+    }   
+  };
 });
 
 
